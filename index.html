@@ -125,6 +125,30 @@ body.canedit .rb{cursor:pointer}
 .form input,.form textarea{font:400 16px system-ui,-apple-system,sans-serif;color:var(--ink);background:rgba(255,255,255,.85);border:.5px solid rgba(60,60,67,.2);border-radius:10px;padding:10px 12px;min-height:44px;width:100%}
 .form textarea{resize:vertical;line-height:1.45}
 .seg{display:flex;flex-wrap:wrap;gap:6px}
+.eh{display:flex;justify-content:space-between;align-items:center;padding:10px 16px 0}
+.cb{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.8);display:grid;place-items:center;cursor:pointer;color:#3a3a3c;background:linear-gradient(145deg,rgba(255,255,255,.75),rgba(255,255,255,.35));-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 2px 10px rgba(0,0,0,.08),inset 0 1px 0 #fff}
+.cb.ok{background:var(--red);color:#fff;border-color:var(--red);box-shadow:0 4px 12px rgba(255,59,48,.35)}
+.cb.ok:disabled{opacity:.5}
+#editSheet{height:min(86vh,760px)}
+#editSheet .sbody{padding:0 14px 18px}
+.etitle-in{display:block;width:100%;border:0;background:transparent;resize:none;overflow:hidden;font:700 26px/1.25 system-ui,-apple-system,sans-serif;letter-spacing:-.02em;color:var(--ink);padding:22px 6px 18px;margin:0}
+.etitle-in:focus{outline:none;background:rgba(255,255,255,.55);border-radius:12px}
+.grp{background:rgba(255,255,255,.85);border-radius:16px;margin-bottom:14px;overflow:hidden}
+.gr{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:8px 14px;border-bottom:.5px solid rgba(60,60,67,.14);font-size:17px}
+.grp>.gr:last-child,.grp>label.gr:last-child{border-bottom:0}
+.gr>span{flex:none;color:var(--ink)}
+.gr.col2{flex-wrap:wrap}
+.gr .seg{justify-content:flex-end}
+.dpill{border:0;background:rgba(120,120,128,.12);color:var(--ink);font:400 17px system-ui,-apple-system,sans-serif;border-radius:9px;padding:7px 12px;cursor:pointer;font-variant-numeric:tabular-nums}
+.dpill.on{color:var(--red)}
+.wwrap{max-height:0;overflow:hidden;transition:max-height .32s cubic-bezier(.2,.8,.2,1);border-bottom:.5px solid rgba(60,60,67,.14)}
+.wwrap.open{max-height:200px}
+.wwrap .wheel{margin:10px 12px;border:0;background:transparent}
+.rin{border:0;background:transparent;text-align:right;font:400 17px system-ui,-apple-system,sans-serif;color:var(--mute);min-width:0;flex:1}
+.rin:focus{outline:none;color:var(--ink)}
+.note-in{display:block;width:100%;border:0;background:transparent;resize:vertical;font:400 17px/1.45 system-ui,-apple-system,sans-serif;color:var(--ink);padding:14px;min-height:110px}
+.note-in:focus{outline:none}
+#eDel{width:100%}
 .etitle{font-size:24px;line-height:1.25;padding-right:8px;word-break:keep-all;overflow-wrap:anywhere}
 .wd-label{color:var(--ink);font-weight:600;margin-left:6px}
 .wheel{position:relative;display:grid;grid-template-columns:1.2fr 1fr 1fr;height:180px;background:rgba(255,255,255,.85);border:.5px solid rgba(60,60,67,.2);border-radius:14px;overflow:hidden}
@@ -201,19 +225,27 @@ body.detail .grid .ev,body.detail .grid .ev.over{display:block;max-height:none;w
   <div class="sh"><h3 id="dayTitle">—<small></small></h3><div class="shb"><button class="addb edit-only" id="addDay">추가</button><button class="x" data-close aria-label="닫기">✕</button></div></div>
   <div class="sbody"><div class="card" id="dayList"></div><p class="hint">옆으로 넘기면 다른 날짜 · 위쪽 막대를 올리면 크게 보여요</p></div>
 </section>
-<section class="sheet" id="editSheet" role="dialog" aria-modal="true" aria-labelledby="eTitle">
+<section class="sheet" id="editSheet" role="dialog" aria-modal="true" aria-label="할 일">
   <div class="grab"></div>
-  <div class="sh"><h3 id="eTitle" class="etitle">할 일</h3><button class="x" data-close aria-label="닫기">✕</button></div>
+  <div class="eh"><button class="cb" id="eClose" aria-label="닫기"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button><button class="cb ok" id="eSave" aria-label="저장"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
   <div class="sbody">
-    <form class="card form" id="eForm">
-      <div class="fl"><span>날짜 <b class="wd-label" id="wLabel"></b></span><input type="hidden" name="d"><div class="wheel" id="wheel"><div class="col" id="wY"></div><div class="col" id="wM"></div><div class="col" id="wD"></div></div></div>
-      <div class="fl"><span>종류</span><div class="seg" id="eCat"></div></div>
-      <label>할 일<input name="t" maxlength="80" required placeholder="예: 피드: 프로그램 소개"></label>
-      <label>달력에 보일 짧은 이름<input name="k" maxlength="10" placeholder="예: 프로그램"></label>
-      <label>세부 내용<textarea name="s" rows="3" maxlength="300" placeholder="메모, 준비할 것"></textarea></label>
-      <div class="fl"><span>우선순위</span><div class="seg" id="ePr"></div></div>
+    <form id="eForm">
+      <textarea class="etitle-in" name="t" rows="1" maxlength="80" placeholder="제목" aria-label="할 일 제목"></textarea>
+      <input type="hidden" name="d">
+      <div class="grp">
+        <div class="gr"><span>날짜</span><button type="button" class="dpill" id="dPill">—</button></div>
+        <div class="wwrap" id="wWrap"><div class="wheel" id="wheel"><div class="col" id="wY"></div><div class="col" id="wM"></div><div class="col" id="wD"></div></div></div>
+        <div class="gr col2"><span>종류</span><div class="seg" id="eCat"></div></div>
+        <div class="gr"><span>우선순위</span><div class="seg" id="ePr"></div></div>
+      </div>
+      <div class="grp">
+        <label class="gr"><span>달력에 보일 이름</span><input name="k" maxlength="10" placeholder="짧게" class="rin"></label>
+      </div>
+      <div class="grp">
+        <textarea name="s" rows="4" maxlength="300" placeholder="세부 내용" class="note-in" aria-label="세부 내용"></textarea>
+      </div>
     </form>
-    <div class="actions"><button class="btn primary" id="eSave">저장</button><button class="btn danger" id="eDel">삭제</button></div>
+    <button class="btn danger" id="eDel">삭제</button>
     <p class="err" id="eErr"></p>
   </div>
 </section>
@@ -389,7 +421,7 @@ const refresh = () => { cal(); list(); dayList(); };
 
 document.addEventListener('click', ev => {
   const b = ev.target.closest('button');
-  if (ev.target.id === 'scrim') { closeSheets(); return; }
+  if (ev.target.id === 'scrim') { $('editSheet').classList.contains('open') ? closeEdit() : closeSheets(); return; }
   const ed = ev.target.closest('[data-edit]');
   if (ed && canWrite && !ev.target.closest('button') && !(window.__noClick > Date.now())) { openEdit(ed.dataset.edit); return; }
   if (!b) return;
@@ -430,7 +462,7 @@ document.addEventListener('pointerover', ev => {
 });
 document.addEventListener('pointerout', ev => { if (ev.target.closest && ev.target.closest('[data-eid]') && !(ev.relatedTarget && ev.relatedTarget.closest && ev.relatedTarget.closest('[data-eid]'))) tip.hidden = true; });
 window.addEventListener('scroll', () => { tip.hidden = true; }, {passive:true});
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheets(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('editSheet').classList.contains('open') ? closeEdit() : closeSheets(); } });
 // swipe left/right in day sheet to move between days
 const shiftDay = (iso, n) => { const d = parse(iso); d.setDate(d.getDate() + n); return iso2(d); };
 function iso2(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
@@ -563,7 +595,7 @@ document.querySelectorAll('.sheet').forEach(sh => {
   let y0 = null;
   let x0 = null;
   sh.addEventListener('touchstart', e => { const body = sh.querySelector('.sbody'); y0 = (body.scrollTop <= 0) ? e.touches[0].clientY : null; x0 = e.touches[0].clientX; }, {passive:true});
-  sh.addEventListener('touchend', e => { const t = e.changedTouches[0]; if (y0 !== null && t.clientY - y0 > 80 && Math.abs(t.clientY - y0) > Math.abs(t.clientX - x0)) closeSheets(); y0 = null; });
+  sh.addEventListener('touchend', e => { const t = e.changedTouches[0]; if (y0 !== null && t.clientY - y0 > 80 && Math.abs(t.clientY - y0) > Math.abs(t.clientX - x0) && !e.target.closest('.wheel')) { sh.id === 'editSheet' ? closeEdit() : closeSheets(); } y0 = null; });
 });
 let lastW = window.innerWidth;
 window.addEventListener('resize', () => { if ((lastW < 600) !== (window.innerWidth < 600)) { lastW = window.innerWidth; cal(); } });
@@ -587,8 +619,8 @@ function openEdit(id, date) {
   const f = $('eForm');
   f.d.value = e.d; f.t.value = e.t; f.k.value = e.k; f.s.value = e.s || '';
   setSeg('eCat', e.c); setSeg('ePr', e.p);
-  $('eTitle').textContent = id ? (e.t || '할 일') : '새 할 일';
-  setWheel(e.d);
+  setWheel(e.d); $('wWrap').classList.remove('open'); $('dPill').classList.remove('on');
+  requestAnimationFrame(autoGrow);
   $('eDel').hidden = !id; $('eDel').textContent = '삭제'; $('eErr').textContent = '';
   openSheet('editSheet', true);
 }
@@ -625,7 +657,7 @@ function syncWheel() {
   wState.d = Math.min(wState.d, daysIn(wState.y, wState.m));
   const iso = wState.y + '-' + pad(wState.m) + '-' + pad(wState.d);
   f.d.value = iso;
-  $('wLabel').textContent = long(iso);
+  $('dPill').textContent = wState.y + '. ' + wState.m + '. ' + wState.d + '. (' + '일월화수목금토'[new Date(wState.y, wState.m-1, wState.d).getDay()] + ')';
 }
 function setWheel(iso) {
   const [y, m, d] = iso.split('-').map(Number);
@@ -650,7 +682,11 @@ function setWheel(iso) {
   }, {passive: true});
   el.addEventListener('click', e => { const it = e.target.closest('.it'); if (it) el.scrollTo({top: el._vals.indexOf(+it.dataset.v) * WH, behavior: 'smooth'}); });
 });
-$('eForm').t.addEventListener('input', e => { $('eTitle').textContent = e.target.value.trim() || (editId ? '할 일' : '새 할 일'); });
+function autoGrow(){ const t = $('eForm').t; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }
+$('eForm').t.addEventListener('input', autoGrow);
+$('dPill').addEventListener('click', () => { const o = $('wWrap').classList.toggle('open'); $('dPill').classList.toggle('on', o); });
+$('eClose').addEventListener('click', () => closeEdit());
+function closeEdit(){ closeSheets(true); if (openDay) { dayList(); openSheet('daySheet'); } }
 function buildSegs() {
   $('eCat').innerHTML = Object.keys(CATS).map(k => `<button type="button" class="ev" data-seg-cat="${k}" style="${cv(k)}">${k}</button>`).join('');
   $('ePr').innerHTML = [['높음','중요'],['보통','보통'],['낮음','여유']].map(([v,l]) => `<button type="button" class="pill2" data-seg-pr="${v}">${l}</button>`).join('');
