@@ -61,6 +61,7 @@ main{max-width:820px;margin:0 auto;padding:0 4px calc(130px + env(safe-area-inse
 
 .day.staff .n{background:rgba(88,86,214,.14);color:#5856d6}
 .stag{color:#5856d6;font-weight:600}
+.ctag{color:#1d7d3a;font-weight:600}
 .sl{margin-top:auto;align-self:stretch;text-align:center;font-size:9px;font-weight:700;letter-spacing:-.04em;color:#fff;background:linear-gradient(180deg,#6e6ce0,#5856d6);border-radius:9px;padding:3px 2px;line-height:1.15;word-break:keep-all;box-shadow:0 2px 6px rgba(88,86,214,.3);pointer-events:none}
 .day.camp-first{position:relative;overflow:visible;z-index:2}
 .cl{position:absolute;left:6px;bottom:8px;width:calc(300% - 12px);text-align:center;font-size:12px;font-weight:700;letter-spacing:.02em;color:#fff;background:linear-gradient(180deg,#ff5a4f,#ff3b30);border-radius:9999px;padding:4px 8px;box-shadow:0 3px 10px rgba(255,59,48,.35),inset 0 1px 0 rgba(255,255,255,.35);white-space:nowrap;pointer-events:none}
@@ -398,7 +399,7 @@ function list() {
 function dayList() {
   if (!openDay) return;
   const items = E.filter(e=>e.d===openDay && vis(e)).sort(byPr);
-  $('dayTitle').innerHTML = esc(long(openDay)) + `<small>${openDay===TODAY?'오늘 · ':''}${STAFF.includes(openDay)?'<b class="stag">스탭 전체 모임</b> · ':''}할 일 ${items.length}개</small>`;
+  $('dayTitle').innerHTML = esc(long(openDay)) + `<small>${openDay===TODAY?'오늘 · ':''}${STAFF.includes(openDay)?'<b class="stag">스탭 전체 모임</b> · ':''}${CAMP.includes(openDay)?`<b class="ctag">더함캠프 ${CAMP.indexOf(openDay)+1}일차</b> · `:''}할 일 ${items.length}개</small>`;
   $('dayList').innerHTML = items.length ? items.map(rowHTML).join('') : '<p class="empty">이날은 할 일이 없어요.</p>';
 }
 
