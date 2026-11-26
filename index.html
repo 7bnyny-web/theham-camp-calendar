@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="더함 홍보">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f7f4f1">
+<title>더함캠프 홍보 캘린더</title>
+<style>
+/* VOICE: 아이폰 기본 캘린더처럼 조용하고 익숙하게
+   IDEA: iOS 캘린더 월 보기, 반투명 막대와 아래에서 올라오는 시트
+   PICTURE: 세로로 이어지는 11·12·1월 달력, 칸마다 종류 색 칩
+   COLOUR and TYPE: 거의 흰 바탕, 잉크 #1d1d1f, 오늘은 iOS 빨강, 종류는 iOS 시스템 색 / SF Pro(system-ui)
+   LAYOUT: 반투명 상단 막대+요일 줄 → 월 달력들 → 반투명 하단 도구 막대, 날짜를 누르면 시트 */
+:root{color-scheme:light;--bg:#fbfaf9;--ink:#1d1d1f;--mute:#8a8580;--line:rgba(60,60,67,.14);--red:#ff3b30;--accent:#ff3b30;
+--up:#007aff;--make:#af52de;--shoot:#ff9500;--ask:#00a3bf;--prep:#8e8e93;--camp:#34c759;
+--up-t:#0058c7;--make-t:#8a2fb8;--shoot-t:#a85700;--ask-t:#007a8f;--prep-t:#55555a;--camp-t:#1d7d3a;
+--glass:rgba(250,249,247,.72);--blur:blur(24px) saturate(190%)}
+*{box-sizing:border-box;min-width:0}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:calc(150px + env(safe-area-inset-top))}
+html.snap{scroll-snap-type:y mandatory}
+.month{scroll-snap-align:start;scroll-snap-stop:always}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Text","Apple SD Gothic Neo","Noto Sans KR",sans-serif;letter-spacing:-.01em;overflow-x:clip;-webkit-tap-highlight-color:transparent}
+body.lock{overflow:hidden}
+.bar{position:sticky;top:0;z-index:20;background:linear-gradient(0deg,rgba(250,249,247,0),rgba(250,249,247,.62) 40%,rgba(250,249,247,.78));-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);-webkit-mask-image:linear-gradient(to top,transparent 0,#000 22px);mask-image:linear-gradient(to top,transparent 0,#000 22px);padding-bottom:16px;margin-bottom:-16px}
+.bar-top{display:flex;align-items:center;justify-content:space-between;padding:calc(8px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 6px max(16px,env(safe-area-inset-left));max-width:820px;margin:0 auto}
+.bar-top b{font-size:17px;font-weight:600}
+.dd{font-size:15px;font-weight:600;color:var(--red);font-variant-numeric:tabular-nums}
+.key{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;max-width:820px;margin:0 auto;padding:2px max(16px,env(safe-area-inset-left)) 8px;font-size:12px;font-weight:600;color:#55555a}.key::-webkit-scrollbar{display:none}
+.key .ev{border:0;cursor:pointer;font-family:inherit;}
+.key .ev[aria-pressed=true]{background:var(--c);color:#fff;box-shadow:0 2px 8px color-mix(in srgb,var(--c) 45%,transparent)}
+.key .ev.hi[aria-pressed=true]::after{background:#fff}
+body.hl .grid .ev{opacity:.22;filter:saturate(.4)}
+body.hl .grid .ev.on{opacity:1;filter:none;background:var(--c);color:#fff;box-shadow:0 2px 6px color-mix(in srgb,var(--c) 40%,transparent)}
+body.hl .grid .ev.on.hi::after{background:#fff}
+.key .ev{flex:none;font-size:12px;padding:3px 8px;letter-spacing:-.02em}.key .ev.hi{padding-right:15px}.key .ev.hi::after{top:7px;right:6px;width:6px;height:6px}
+.tip{position:fixed;z-index:50;max-width:260px;padding:10px 13px;border-radius:16px;background:linear-gradient(145deg,rgba(255,255,255,.55),rgba(255,255,255,.28));-webkit-backdrop-filter:blur(14px) saturate(200%) brightness(1.05);backdrop-filter:blur(14px) saturate(200%) brightness(1.05);box-shadow:0 10px 30px rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.65);pointer-events:none;font-size:13px;line-height:1.45}
+.tip b{display:block;font-size:15px;font-weight:600;margin:3px 0 2px}.tip p{margin:0;color:#4a4a4f}
+.wds{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));max-width:820px;margin:0 auto;padding:2px 4px 6px}
+.wds span{text-align:center;font-size:12px;color:var(--mute)}
+.wds span:first-child{color:var(--red)}
+main{max-width:820px;margin:0 auto;padding:0 4px calc(96px + env(safe-area-inset-bottom))}
+.month{padding-top:14px}
+.month h2{font-size:28px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px 10px;scroll-margin-top:120px}
+.month h2.cur{color:var(--red)}
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.day{border:0;border-top:.5px solid var(--line);background:none;color:var(--ink);min-height:94px;padding:5px 2px 4px;display:flex;flex-direction:column;align-items:stretch;gap:2px;cursor:pointer;font:inherit;text-align:left}
+.day.out{border-top-color:transparent;cursor:default}
+.n{align-self:center;width:28px;height:28px;display:grid;place-items:center;border-radius:50%;font-size:16px;font-weight:500;font-variant-numeric:tabular-nums;margin-bottom:1px}
+.day.sun .n{color:var(--red)}
+.day.past .n{color:#b5b0ab}
+.day.today .n{background:var(--red);color:#fff;font-weight:600}
+.day.camp{background:linear-gradient(180deg,rgba(52,199,89,.22),rgba(52,199,89,.1));border-top:2px solid #34c759}
+.day.camp-first{border-top-left-radius:12px;border-bottom-left-radius:12px}
+.day.camp-last{border-top-right-radius:12px;border-bottom-right-radius:12px}
+.day.camp .n{background:#34c759;color:#fff;font-weight:700;box-shadow:0 2px 8px rgba(52,199,89,.45)}
+.day.camp-first{position:relative;overflow:visible;z-index:2}
+.cl{position:absolute;left:6px;bottom:8px;width:calc(300% - 12px);text-align:center;font-size:12px;font-weight:700;letter-spacing:.02em;color:#fff;background:linear-gradient(180deg,#ff5a4f,#ff3b30);border-radius:9999px;padding:4px 8px;box-shadow:0 3px 10px rgba(255,59,48,.35),inset 0 1px 0 rgba(255,255,255,.35);white-space:nowrap;pointer-events:none}
+.day:active{background:rgba(0,0,0,.05)}
+.ev{position:relative;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;word-break:break-all;border-radius:5px;padding:2px 3px 2px 4px;font-size:10px;font-weight:600;line-height:1.25;letter-spacing:-.05em;color:var(--c-t);background:color-mix(in srgb,var(--c) 14%,#fff)}
+.ev.hi{padding-right:9px}
+.ev.hi::after{content:"";position:absolute;top:4px;right:3px;width:5px;height:5px;border-radius:50%;background:var(--red)}
+.ev.done{opacity:.4;text-decoration:line-through}
+.more{font-size:10px;color:var(--mute);text-align:center;font-weight:600}
+/* list view */
+.dh{position:sticky;top:calc(70px + env(safe-area-inset-top));z-index:5;background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);padding:8px 14px;font-size:15px;font-weight:600;border-bottom:.5px solid var(--line);display:flex;gap:8px;align-items:center}
+.dh.today{color:var(--red)}
+#view-list .rows{padding:0 6px}
+/* rows (sheet + list) */
+.row{display:flex;align-items:flex-start;gap:12px;padding:12px 10px;border-bottom:.5px solid var(--line)}
+.row:last-child{border-bottom:0}
+.vbar{align-self:stretch;width:4px;border-radius:2px;background:var(--c);flex:none}
+.rb{flex:1}
+.meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:3px}
+.tag{font-size:12px;font-weight:600;color:var(--c-t);background:color-mix(in srgb,var(--c) 15%,#fff);border-radius:6px;padding:1px 7px}
+.pr{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--red)}
+.pr::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--red)}
+.pr.l::before{background:var(--mute)}
+.pr.l{color:var(--mute);font-weight:500}
+.rt{font-size:17px;font-weight:600;line-height:1.3;margin:0}
+.rs{font-size:14px;color:var(--mute);margin:3px 0 0;line-height:1.45}
+.row.done .rt{text-decoration:line-through;color:var(--mute)}
+.chk{flex:none;width:28px;height:28px;border-radius:50%;border:2px solid var(--c);background:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer;display:grid;place-items:center;margin-top:1px}
+.row.done .chk{background:var(--c)}
+.empty{padding:24px;color:var(--mute);font-size:15px;text-align:center}
+/* bottom toolbar */
+.tools{position:fixed;left:0;right:0;bottom:0;z-index:30;background:linear-gradient(180deg,rgba(251,250,249,0),rgba(251,250,249,.55) 40%,rgba(251,250,249,.7));-webkit-backdrop-filter:blur(20px) saturate(190%);backdrop-filter:blur(20px) saturate(190%);-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 26px);mask-image:linear-gradient(to bottom,transparent 0,#000 26px);border:0;padding:24px max(12px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+.tools div{max-width:820px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+.tb{border:0;background:none;color:var(--red);font:400 17px system-ui,-apple-system,sans-serif;min-height:44px;padding:0 6px;cursor:pointer}
+.tb.on{font-weight:600}
+/* sheets */
+.scrim{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.22);opacity:0;pointer-events:none}
+.scrim.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;max-width:640px;margin:0 auto;max-height:78vh;display:flex;flex-direction:column;background:rgba(250,249,247,.82);-webkit-backdrop-filter:blur(30px) saturate(190%);backdrop-filter:blur(30px) saturate(190%);border-radius:22px 22px 0 0;box-shadow:0 -6px 30px rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.9);transform:translateY(105%);padding-bottom:env(safe-area-inset-bottom)}
+.sheet.open{transform:none}
+.grab{width:38px;height:5px;border-radius:3px;background:rgba(60,60,67,.3);margin:7px auto 0}
+.sh{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:10px 16px 8px}
+.sh h3{margin:0;font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.sh small{display:block;font-size:14px;color:var(--mute);font-weight:400;margin-top:2px}
+.x{flex:none;width:32px;height:32px;border-radius:50%;border:0;background:rgba(120,120,128,.16);color:#6b6b70;font-size:17px;cursor:pointer;display:grid;place-items:center}
+.sbody{overflow-y:auto;padding:0 10px 14px;overscroll-behavior:contain}
+.card{background:rgba(255,255,255,.75);border-radius:14px;padding:0 4px;box-shadow:inset 0 .5px 0 rgba(255,255,255,.9)}
+.opt{display:flex;align-items:center;gap:12px;padding:11px 10px;border-bottom:.5px solid var(--line)}
+.opt:last-child{border-bottom:0}
+.opt i{width:12px;height:12px;border-radius:50%;background:var(--c);flex:none}
+.opt div{flex:1}.opt b{display:block;font-size:17px;font-weight:500}.opt span{display:block;font-size:13px;color:var(--mute)}
+.sw{position:relative;width:51px;height:31px;border-radius:9999px;border:0;background:rgba(120,120,128,.18);cursor:pointer;flex:none}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+.sw[aria-checked=true]{background:#34c759}.sw[aria-checked=true]::after{left:22px}
+.cap{font-size:13px;color:var(--mute);margin:14px 10px 6px}
+.edit-only{display:none}body.canedit .edit-only{display:inline-flex}
+.shb{display:flex;align-items:center;gap:10px}
+.fab{position:fixed;z-index:31;right:max(16px,calc((100vw - 820px)/2 + 16px));bottom:calc(84px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;align-items:center;justify-content:center;cursor:pointer;background:linear-gradient(145deg,rgba(255,255,255,.42),rgba(255,255,255,.12));-webkit-backdrop-filter:blur(18px) saturate(200%) brightness(1.05);backdrop-filter:blur(18px) saturate(200%) brightness(1.05);border:1px solid rgba(255,255,255,.75);box-shadow:0 8px 24px rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.3)}
+.fab::before,.fab::after{content:"";position:absolute;left:50%;top:50%;width:22px;height:2.5px;border-radius:2px;background:var(--red);transform:translate(-50%,-50%)}
+.fab::after{transform:translate(-50%,-50%) rotate(90deg)}
+.fab:active{transform:scale(.94)}
+.addb{border:0;background:rgba(255,59,48,.12);color:var(--red);font:600 15px system-ui,-apple-system,sans-serif;border-radius:9999px;padding:6px 14px;min-height:32px;cursor:pointer;align-items:center}
+.note{margin:0 auto;max-width:820px;padding:0 16px 6px;font-size:13px;color:#a85700}
+body.canedit .rb{cursor:pointer}
+.form{padding:6px 12px 12px;display:flex;flex-direction:column;gap:12px}
+.form label,.fl{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--mute)}
+.form input,.form textarea{font:400 16px system-ui,-apple-system,sans-serif;color:var(--ink);background:rgba(255,255,255,.85);border:.5px solid rgba(60,60,67,.2);border-radius:10px;padding:10px 12px;min-height:44px;width:100%}
+.form textarea{resize:vertical;line-height:1.45}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg .ev{font-size:14px;padding:7px 12px;border:0;cursor:pointer;-webkit-line-clamp:1;opacity:.55}
+.seg .ev[aria-pressed=true]{opacity:1;box-shadow:inset 0 0 0 2px var(--c)}
+.pill2{border:.5px solid rgba(60,60,67,.2);background:rgba(255,255,255,.85);color:var(--ink);font:500 14px system-ui,-apple-system,sans-serif;border-radius:9999px;padding:7px 14px;cursor:pointer}
+.pill2[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.actions{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.btn{border:0;border-radius:14px;min-height:50px;font:600 17px system-ui,-apple-system,sans-serif;cursor:pointer}
+.btn.primary{background:var(--red);color:#fff}.btn.primary:disabled{opacity:.5}
+.btn.danger{background:rgba(255,59,48,.1);color:var(--red)}
+.err{color:var(--red);font-size:14px;margin:8px 4px 0;min-height:1em}
+button:focus-visible{outline:2px solid #0071e3;outline-offset:2px}
+@media (min-width:600px){.day{min-height:116px;padding:6px 4px}.ev{font-size:12px;padding:3px 7px;letter-spacing:-.02em}.ev.hi{padding-right:13px}.ev.hi::after{top:6px;right:5px;width:6px;height:6px}}
+@media (max-width:360px){.ev{font-size:9.5px}}
+@media (prefers-reduced-motion:no-preference){.sheet{transition:transform .32s cubic-bezier(.2,.8,.2,1)}.scrim{transition:opacity .25s}.sw::after{transition:left .2s}}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="bar-top"><b>더함캠프 홍보</b><span class="dd" id="dday">—</span></div>
+  <p class="note" id="note" hidden></p>
+  <div class="key" id="key"></div>
+  <div class="wds" id="wds"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+</header>
+
+<main>
+  <div id="view-cal"></div>
+  <div id="view-list" hidden></div>
+</main>
+
+<button class="fab edit-only" id="addBtn" aria-label="할 일 추가"></button>
+<nav class="tools"><div>
+  <button class="tb" id="goToday">오늘</button>
+  <button class="tb" id="openFilter">종류</button>
+  <button class="tb" id="toggleView">목록</button>
+</div></nav>
+
+<div class="scrim" id="scrim"></div>
+<section class="sheet" id="daySheet" role="dialog" aria-modal="true" aria-labelledby="dayTitle">
+  <div class="grab"></div>
+  <div class="sh"><h3 id="dayTitle">—<small></small></h3><div class="shb"><button class="addb edit-only" id="addDay">추가</button><button class="x" data-close aria-label="닫기">✕</button></div></div>
+  <div class="sbody"><div class="card" id="dayList"></div></div>
+</section>
+<section class="sheet" id="editSheet" role="dialog" aria-modal="true" aria-labelledby="eTitle">
+  <div class="grab"></div>
+  <div class="sh"><h3 id="eTitle">할 일 수정</h3><button class="x" data-close aria-label="닫기">✕</button></div>
+  <div class="sbody">
+    <form class="card form" id="eForm">
+      <label>날짜<input type="date" name="d" required></label>
+      <div class="fl"><span>종류</span><div class="seg" id="eCat"></div></div>
+      <label>할 일<input name="t" maxlength="80" required placeholder="예: 피드: 프로그램 소개"></label>
+      <label>달력에 보일 짧은 이름<input name="k" maxlength="10" placeholder="예: 프로그램"></label>
+      <label>어떻게<textarea name="s" rows="3" maxlength="300" placeholder="메모, 준비할 것"></textarea></label>
+      <div class="fl"><span>우선순위</span><div class="seg" id="ePr"></div></div>
+    </form>
+    <div class="actions"><button class="btn primary" id="eSave">저장</button><button class="btn danger" id="eDel">삭제</button></div>
+    <p class="err" id="eErr"></p>
+  </div>
+</section>
+<section class="sheet" id="filterSheet" role="dialog" aria-modal="true" aria-labelledby="fTitle">
+  <div class="grab"></div>
+  <div class="sh"><h3 id="fTitle">할 일 종류</h3><button class="x" data-close aria-label="닫기">✕</button></div>
+  <div class="sbody">
+    <div class="card" id="catList"></div>
+    <p class="cap">우선순위</p>
+    <div class="card"><div class="opt" style="--c:var(--red)"><i></i><div><b>중요한 일만 보기</b><span>달력에서는 오른쪽 위 빨간 점으로 표시돼요</span></div><button class="sw" id="onlyHi" role="switch" aria-checked="false" aria-label="중요한 일만 보기"></button></div></div>
+    <p class="cap">완료 체크는 이 기기에만 저장돼요 · 11/26 기준 일정</p>
+  </div>
+</section>
+
+<script>
+{
+const CATS = {
+  '업로드': {c:'var(--up)', t:'var(--up-t)', d:'인스타에 올리는 날 (피드·스토리)'},
+  '제작': {c:'var(--make)', t:'var(--make-t)', d:'이날까지 디자인·영상 완성'},
+  '촬영': {c:'var(--shoot)', t:'var(--shoot-t)', d:'직접 찍거나 교회에서 찍는 날'},
+  '요청': {c:'var(--ask)', t:'var(--ask-t)', d:'공문·문자 보내고 자료 받기'},
+  '준비': {c:'var(--prep)', t:'var(--prep-t)', d:'정하고 확인하고 만들 일'},
+  '캠프': {c:'var(--camp)', t:'var(--camp-t)', d:'캠프 기간 1/18~20'}
+};
+let E = [
+  ['2026-11-27','준비','신청 확인','참가 신청 마감일·신청 링크 확인','얼리버드는 없음. 마감일과 신청 QR을 캠프 소개 카드뉴스에 넣어야 해서 먼저 확인','높음'],
+  ['2026-11-27','준비','촬영 가이드','참가자 인터뷰 촬영 가이드 만들기','질문 3개, 세로 화면 15~30초, 밝고 조용한 곳, 얼굴 정면, 파일 이름 규칙, 제출 방법','높음'],
+  ['2026-11-27','준비','공문 작성','교회별 인터뷰 요청 공문·문자 작성','목적, 대상(작년 참가 학생 1~2명), 촬영 기간 12/6·12/13 주일, 제출 마감 12/14, 초상 사용 동의, 문의처','높음'],
+  ['2026-11-30','요청','인터뷰 요청','교회 담당자에게 공문·문자·촬영 가이드 보내기','보낸 교회와 답장 여부를 기록. 미성년 학생은 보호자 동의도 함께 받기','높음'],
+  ['2026-11-30','요청','자료 요청','지난 캠프 사진·영상 원본 요청','작년 촬영 담당에게 요청, 12/7까지 받기. 하이라이트 릴스에 사용','보통'],
+  ['2026-11-30','제작','캠프 소개','캠프 소개 카드뉴스 완성','12/3 업로드용. 표지, 4가지 키워드, 주제 말씀, 일정·장소·대상·회비 11만원, 신청 QR','높음'],
+  ['2026-11-30','제작','스탭 모집','스탭 모집 스토리·공유 이미지 완성','12/3 업로드용. 스탭 신청서 링크, 회비 5만원, 12/21 마감','보통'],
+  ['2026-12-01','요청','디렉터','섬김이팀(디렉터) 사진·한마디 요청','파트명, 사진 1장, 한마디 한 줄. 12/10까지','보통'],
+  ['2026-12-01','요청','강사 정보','강사 사진·소개글 요청','캠프장에게 강사 확정 여부 확인, 12/10까지','보통'],
+  ['2026-12-03','업로드','캠프 소개','피드: 더함캠프 THE PROMISE 소개','카드뉴스 게시. 신청 링크는 프로필과 스토리에 같이','높음'],
+  ['2026-12-03','업로드','스탭 모집','스토리: 스탭 모집 + 나 더함캠프 간다 이미지','신청서 링크 스티커 달기','보통'],
+  ['2026-12-04','요청','홍보자료','교회별 홍보 자료 묶음 보내기','포스터, 정사각형 이미지, 주보 문구, 단톡방 메시지, 신청 QR','높음'],
+  ['2026-12-04','준비','굿즈 결정','굿즈 품목·예산 확정','굿즈·예산 시트에서 고르고 업체 견적 받기','높음'],
+  ['2026-12-06','촬영','교회촬영','교회별 학생 인터뷰 촬영 (1차 주일)','각 교회에서 가이드대로 촬영. 찍은 교회부터 바로 제출 받기','높음'],
+  ['2026-12-07','제작','프로그램','프로그램 소개 카드뉴스 완성','12/10 업로드용. 플레잉 워십, 더함 마블, 특별 프로그램, 결단·성찬 예배','보통'],
+  ['2026-12-09','요청','리마인드','인터뷰 미제출 교회에 리마인드 문자','12/13 주일 촬영, 12/14 제출 마감 다시 안내','높음'],
+  ['2026-12-09','요청','촬영 허가','감신대 기숙사·시설 촬영 허가 요청','12/16 장소 촬영 전에 생활관·시설 담당에게 확인','보통'],
+  ['2026-12-10','업로드','프로그램','피드: 프로그램 소개','카드뉴스 게시','보통'],
+  ['2026-12-10','준비','자료 확인','디렉터·강사 자료 받았는지 확인','빠진 사람 개별 연락','보통'],
+  ['2026-12-11','준비','굿즈 발주','굿즈 시안 확정·발주','12/24 전 입고되게 업체 제작 기간 확인','높음'],
+  ['2026-12-11','준비','질문지','캠프장 인터뷰 질문지 작성','기획 의도, 이번 주제, 학생들에게 바라는 점','보통'],
+  ['2026-12-13','촬영','교회촬영','교회별 학생 인터뷰 촬영 (2차 주일)','1차 때 못 찍은 교회','높음'],
+  ['2026-12-14','요청','영상 마감','교회 인터뷰 영상 제출 마감','받은 영상 정리. 부족하면 지난 캠프 영상 위주로 대체','높음'],
+  ['2026-12-14','제작','섬김이팀','섬김이팀 소개 카드뉴스 완성','12/17 업로드용','보통'],
+  ['2026-12-16','촬영','장소촬영','캠프장 인터뷰 + 장소 촬영','오는 길 1인칭, 기숙사, 중강당·강의실. 12/14~19 중 하루','보통'],
+  ['2026-12-17','업로드','섬김이팀','피드: 섬김이팀(디렉터) 소개 + 강사 공개','카드뉴스 게시. 한 명씩은 그 주 스토리로','보통'],
+  ['2026-12-18','업로드','모집 임박','스토리: 스탭 모집 마감 임박','12/21 마감 리마인드','보통'],
+  ['2026-12-19','업로드','D-30','스토리: D-30','','낮음'],
+  ['2026-12-21','준비','스탭 마감','스탭 모집 마감','최종 명단 정리','보통'],
+  ['2026-12-21','제작','인터뷰','참가자 인터뷰 + 지난 캠프 하이라이트 릴스 완성','20~30초. 인터뷰로 시작, 현장 장면, 신청 안내로 마무리','높음'],
+  ['2026-12-24','업로드','인터뷰','피드: 참가자 인터뷰 + 지난 캠프 하이라이트','릴스 게시. 출연 교회 계정 태그','높음'],
+  ['2026-12-24','준비','굿즈 입고','굿즈 입고 확인, 12/28 촬영 목록 준비','스탭 인터뷰 질문지 포함','보통'],
+  ['2026-12-28','촬영','스탭모임','스탭 모임 1차 촬영','스탭 인터뷰, 단체 사진, 비하인드, D-7 멘트','높음'],
+  ['2026-12-28','제작','캠프장','캠프장 인터뷰 릴스 + 굿즈 카드뉴스 완성','12/31 업로드용','보통'],
+  ['2026-12-28','요청','찬양 선곡','찬양팀에 캠프 찬양 목록 요청','스탭 모임 때 직접 요청, 1/4까지','보통'],
+  ['2026-12-31','업로드','굿즈공개','피드: 캠프장 인터뷰 + 굿즈 공개','릴스 + 카드뉴스','보통'],
+  ['2027-01-04','업로드','D-14','스토리: D-14','12/28 단체 사진 사용','낮음'],
+  ['2027-01-04','제작','비하인드','스탭 비하인드 릴스 + 찬양 목록 카드뉴스 완성','1/7 업로드용. 플레이리스트 링크도 만들기','보통'],
+  ['2027-01-07','업로드','비하인드','피드: 스탭 비하인드 + 캠프 찬양 플리','릴스 + 카드뉴스','보통'],
+  ['2027-01-07','업로드','질문박스','스토리: 플리 링크 + 질문박스 열기','링크 스티커, 질문은 1/11까지 모으기','보통'],
+  ['2027-01-07','촬영','스탭모임','스탭 모임 2차 촬영','찬양팀 연습, D-3 멘트','보통'],
+  ['2027-01-11','업로드','D-7','스토리: D-7 + 찬양팀 연습 영상','','낮음'],
+  ['2027-01-11','제작','장소FAQ','장소 안내 릴스 + FAQ 카드뉴스 완성','1/14 업로드용. 질문박스 답 정리','높음'],
+  ['2027-01-14','업로드','장소FAQ','피드: 장소 안내(오는 길·기숙사) + FAQ','접수 1/18 오후 1시, 준비물, 교통','높음'],
+  ['2027-01-14','촬영','스탭모임','스탭 모임 3차 촬영','마지막 준비 모습, D-1 멘트, 현장 촬영 동선','보통'],
+  ['2027-01-15','업로드','D-3','스토리: D-3 + 찬양 플리 다시 공유','','낮음'],
+  ['2027-01-17','업로드','D-1','스토리: D-1 최종 안내','접수 시간과 준비물','높음'],
+  ['2027-01-18','캠프','1일차','캠프 1일차','접수 오후 1시. 현장 스토리 올리기','높음'],
+  ['2027-01-19','캠프','2일차','캠프 2일차','현장 스토리 올리기','보통'],
+  ['2027-01-20','캠프','3일차','캠프 3일차','단체 사진, 후기 받기','보통'],
+  ['2027-01-21','업로드','캠프영상','피드: 캠프 하이라이트 릴스','','보통'],
+  ['2027-01-25','제작','후기','후기 카드뉴스 완성','1/28 업로드용','보통'],
+  ['2027-01-28','업로드','후기감사','피드: 참가자 후기 + 감사 인사','카드뉴스 + 릴스','보통']].map(([d,c,k,t,s,p],i)=>({id:'e'+String(i).padStart(2,'0'),d,c,k,t,s,p,done:false}));
+const FALLBACK = E;
+
+const pad = n => String(n).padStart(2,'0');
+const iso = dt => dt.getFullYear()+'-'+pad(dt.getMonth()+1)+'-'+pad(dt.getDate());
+const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); };
+const WD = '일월화수목금토';
+const long = s => { const d = parse(s); return (d.getMonth()+1)+'월 '+d.getDate()+'일 '+WD[d.getDay()]+'요일'; };
+const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const TODAY = iso(new Date());
+const CAMP = ['2027-01-18','2027-01-19','2027-01-20'];
+const cv = c => { const v = CATS[c] || CATS['준비']; return `--c:${v.c};--c-t:${v.t}`; };
+const PO = {'높음':0,'보통':1,'낮음':2};
+let hl = null;
+let live = false, canWrite = false, db = null, editId = null, delArmed = false;
+const byPr = (a,b) => String(a.d).localeCompare(String(b.d)) || (PO[a.p]??1)-(PO[b.p]??1);
+const MONTHS = [[2026,10],[2026,11],[2027,0]];
+const $ = id => document.getElementById(id);
+
+let done = {}, on = Object.fromEntries(Object.keys(CATS).map(k=>[k,true])), onlyHi = false, openDay = null, view = 'cal';
+try { done = JSON.parse(localStorage.getItem('theham-done2') || '{}'); Object.assign(on, JSON.parse(localStorage.getItem('theham-cats2') || '{}')); } catch(e) {}
+const save = () => { try { localStorage.setItem('theham-done2', JSON.stringify(done)); localStorage.setItem('theham-cats2', JSON.stringify(on)); } catch(e) {} };
+const vis = e => on[e.c] !== false && (!onlyHi || e.p==='높음');
+const isDone = e => live ? !!e.done : !!done[e.id];
+
+const rowHTML = e => `<div class="row${isDone(e)?' done':''}" style="${cv(e.c)}"><span class="vbar"></span>
+  <div class="rb" data-edit="${esc(e.id)}"><div class="meta"><span class="tag">${esc(e.c)}</span>${e.p==='높음'?'<span class="pr">중요</span>':e.p==='낮음'?'<span class="pr l">여유</span>':''}</div>
+  <p class="rt">${esc(e.t)}</p>${e.s?`<p class="rs">${esc(e.s)}</p>`:''}</div>
+  <button class="chk" data-id="${esc(e.id)}" aria-label="${esc(e.t)} 완료" aria-pressed="${isDone(e)}">${isDone(e)?'✓':''}</button></div>`;
+
+function cal() {
+  const y0 = window.scrollY, H = document.documentElement; H.classList.remove('snap');
+  const cap = window.innerWidth < 600 ? 3 : 4;
+  const now = parse(TODAY);
+  $('view-cal').innerHTML = MONTHS.map(([y,m]) => {
+    const first = new Date(y,m,1), days = new Date(y,m+1,0).getDate();
+    let g = '';
+    for (let i=0;i<first.getDay();i++) g += '<div class="day out"></div>';
+    for (let d=1; d<=days; d++) {
+      const s = y+'-'+pad(m+1)+'-'+pad(d);
+      const ev = E.filter(e=>e.d===s && vis(e)).sort(byPr);
+      const cls = ['day', new Date(y,m,d).getDay()===0?'sun':'', s===TODAY?'today':'', s<TODAY?'past':'', CAMP.includes(s)?'camp':'', s===CAMP[0]?'camp-first':'', s===CAMP[2]?'camp-last':''].join(' ');
+      const campLabel = s===CAMP[0] ? '<span class="cl">D-DAY · 더함캠프</span>' : '';
+      const shown = ev.length > cap ? ev.slice(0, cap-1) : ev;
+      const chips = shown.map(e=>`<span class="ev${e.p==='높음'?' hi':''}${isDone(e)?' done':''}" data-c="${esc(e.c)}" data-eid="${esc(e.id)}" style="${cv(e.c)}">${esc(e.k)}</span>`).join('') + (ev.length>shown.length?`<span class="more">+${ev.length-shown.length}</span>`:'');
+      g += `<button class="${cls}" data-d="${s}" aria-label="${m+1}월 ${d}일, 할 일 ${ev.length}개"><span class="n">${d}</span>${chips}${campLabel}</button>`;
+    }
+    const cur = y===now.getFullYear() && m===now.getMonth();
+    return `<section class="month"><h2 id="m-${y}-${m+1}" class="${cur?'cur':''}">${m+1}월${m===0?` <span style="color:var(--mute);font-weight:500">${y}</span>`:''}</h2><div class="grid">${g}</div></section>`;
+  }).join('');
+  window.scrollTo(0, y0); if (typeof applyHl === 'function') applyHl();
+  requestAnimationFrame(() => H.classList.toggle('snap', view === 'cal'));
+}
+
+function list() {
+  const items = E.filter(e => vis(e) && e.d >= TODAY).sort(byPr);
+  const dates = [...new Set(items.map(e=>e.d))];
+  $('view-list').innerHTML = dates.length ? dates.map(d =>
+    `<div class="dh${d===TODAY?' today':''}" id="l-${d}">${esc(long(d))}${d===TODAY?' · 오늘':''}</div><div class="rows">${items.filter(e=>e.d===d).map(rowHTML).join('')}</div>`
+  ).join('') : '<p class="empty">남은 할 일이 없어요.</p>';
+}
+
+function dayList() {
+  if (!openDay) return;
+  const items = E.filter(e=>e.d===openDay && vis(e)).sort(byPr);
+  $('dayTitle').innerHTML = esc(long(openDay)) + `<small>${openDay===TODAY?'오늘 · ':''}할 일 ${items.length}개</small>`;
+  $('dayList').innerHTML = items.length ? items.map(rowHTML).join('') : '<p class="empty">이날은 할 일이 없어요.</p>';
+}
+
+function cats() {
+  $('catList').innerHTML = Object.entries(CATS).map(([k,v]) =>
+    `<div class="opt" style="${cv(k)}"><i></i><div><b>${k}</b><span>${v.d}</span></div><button class="sw" data-cat="${k}" role="switch" aria-checked="${on[k]}" aria-label="${k} 보기"></button></div>`).join('');
+}
+
+function header() {
+  const diff = Math.round((parse(CAMP[0]) - parse(TODAY)) / 864e5);
+  $('dday').textContent = '캠프 ' + (diff > 0 ? 'D-'+diff : diff === 0 ? 'D-DAY' : '끝');
+}
+
+let lastFocus = null;
+function openSheet(id, keepDay) {
+  closeSheets(true);
+  lastFocus = document.activeElement;
+  $(id).classList.add('open'); $('scrim').classList.add('open'); document.body.classList.add('lock');
+  $(id).querySelector('.x').focus({preventScroll:true});
+}
+function closeSheets(silent) {
+  document.querySelectorAll('.sheet.open').forEach(s=>s.classList.remove('open'));
+  $('scrim').classList.remove('open'); document.body.classList.remove('lock');
+  if (!silent) { openDay = null; if (lastFocus) lastFocus.focus({preventScroll:true}); }
+}
+const refresh = () => { cal(); list(); dayList(); };
+
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('button');
+  if (ev.target.id === 'scrim') { closeSheets(); return; }
+  const ed = ev.target.closest('[data-edit]');
+  if (ed && canWrite && !ev.target.closest('button')) { openEdit(ed.dataset.edit); return; }
+  if (!b) return;
+  if (b.hasAttribute('data-close')) { closeSheets(); return; }
+  if (b.dataset.d) { openDay = b.dataset.d; dayList(); openSheet('daySheet'); return; }
+  if (b.dataset.cat) { on[b.dataset.cat] = !on[b.dataset.cat]; b.setAttribute('aria-checked', on[b.dataset.cat]); save(); cal(); list(); return; }
+  if (b.dataset.hl) { hl = hl === b.dataset.hl ? null : b.dataset.hl; keyRender(); applyHl(); return; }
+  if (b.dataset.id) { toggleDone(b.dataset.id); return; }
+  if (b.id === 'addBtn' || b.id === 'addDay') { openEdit(null, b.id === 'addDay' ? openDay : null); return; }
+  if (b.dataset.segCat) { setSeg('eCat', b.dataset.segCat); return; }
+  if (b.dataset.segPr) { setSeg('ePr', b.dataset.segPr); return; }
+  if (b.id === 'eSave') { saveEdit(); return; }
+  if (b.id === 'eDel') { deleteEdit(); return; }
+  if (b.id === 'onlyHi') { onlyHi = !onlyHi; b.setAttribute('aria-checked', onlyHi); cal(); list(); return; }
+  if (b.id === 'openFilter') { openSheet('filterSheet'); return; }
+  if (b.id === 'toggleView') {
+    view = view === 'cal' ? 'list' : 'cal';
+    $('view-cal').hidden = view !== 'cal'; $('view-list').hidden = view !== 'list'; $('wds').hidden = view !== 'cal'; document.documentElement.classList.toggle('snap', view === 'cal');
+    b.textContent = view === 'cal' ? '목록' : '달력'; window.scrollTo({top:0}); return;
+  }
+  if (b.id === 'goToday') {
+    if (view === 'cal') { const t = parse(TODAY); const h = $('m-'+t.getFullYear()+'-'+(t.getMonth()+1)); if (h) h.scrollIntoView({behavior:'smooth'}); openDay = TODAY; dayList(); openSheet('daySheet'); }
+    else window.scrollTo({top:0, behavior:'smooth'});
+  }
+});
+const tip = document.createElement('div'); tip.className = 'tip'; tip.hidden = true; document.body.append(tip);
+let EM = Object.fromEntries(E.map(e=>[e.id,e]));
+document.addEventListener('pointerover', ev => {
+  if (ev.pointerType !== 'mouse') return;
+  const el = ev.target.closest('[data-eid]'); if (!el) { tip.hidden = true; return; }
+  const e = EM[el.dataset.eid]; if (!e) return;
+  tip.innerHTML = `<div class="meta"><span class="tag" style="${cv(e.c)}">${esc(e.c)}</span>${e.p==='높음'?'<span class="pr">중요</span>':''}</div><b>${esc(e.t)}</b>${e.s?`<p>${esc(e.s)}</p>`:''}`;
+  tip.hidden = false;
+  const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = Math.min(Math.max(8, r.left + r.width/2 - w/2), innerWidth - w - 8);
+  let y = r.bottom + 8; if (y + h > innerHeight - 70) y = r.top - h - 8;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+});
+document.addEventListener('pointerout', ev => { if (ev.target.closest && ev.target.closest('[data-eid]') && !(ev.relatedTarget && ev.relatedTarget.closest && ev.relatedTarget.closest('[data-eid]'))) tip.hidden = true; });
+window.addEventListener('scroll', () => { tip.hidden = true; }, {passive:true});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheets(); });
+// swipe down to close
+document.querySelectorAll('.sheet').forEach(sh => {
+  let y0 = null;
+  sh.addEventListener('touchstart', e => { const body = sh.querySelector('.sbody'); y0 = (body.scrollTop <= 0) ? e.touches[0].clientY : null; }, {passive:true});
+  sh.addEventListener('touchend', e => { if (y0 !== null && e.changedTouches[0].clientY - y0 > 80) closeSheets(); y0 = null; });
+});
+let lastW = window.innerWidth;
+window.addEventListener('resize', () => { if ((lastW < 600) !== (window.innerWidth < 600)) { lastW = window.innerWidth; cal(); } });
+function setData(list) {
+  E = list.filter(e => e && typeof e.d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(e.d)).map(e => ({...e, c: CATS[e.c] ? e.c : '준비', p: PO[e.p] !== undefined ? e.p : '보통', k: String(e.k||e.t||'').slice(0,10), t: String(e.t||''), s: String(e.s||'')}));
+  EM = Object.fromEntries(E.map(e=>[e.id,e]));
+  refresh();
+}
+function note(msg) { const n = $('note'); n.textContent = msg; n.hidden = !msg; }
+async function toggleDone(id) {
+  const e = EM[id]; if (!e) return;
+  if (!live) { if (done[id]) delete done[id]; else done[id] = true; save(); refresh(); return; }
+  if (!canWrite) return;
+  try { await db.doc('events/' + id).update({done: !e.done}); } catch (err) { note('저장하지 못했어요. 다시 시도해 주세요.'); }
+}
+function setSeg(id, val) { document.querySelectorAll('#'+id+' button').forEach(b => b.setAttribute('aria-pressed', (b.dataset.segCat||b.dataset.segPr) === val)); $(id).dataset.val = val; }
+function openEdit(id, date) {
+  if (!canWrite) return;
+  editId = id; delArmed = false;
+  const e = id ? EM[id] : {d: date || TODAY, c:'업로드', k:'', t:'', s:'', p:'보통'};
+  const f = $('eForm');
+  f.d.value = e.d; f.t.value = e.t; f.k.value = e.k; f.s.value = e.s || '';
+  setSeg('eCat', e.c); setSeg('ePr', e.p);
+  $('eTitle').textContent = id ? '할 일 수정' : '할 일 추가';
+  $('eDel').hidden = !id; $('eDel').textContent = '삭제'; $('eErr').textContent = '';
+  openSheet('editSheet', true);
+}
+async function saveEdit() {
+  const f = $('eForm');
+  const data = {d: f.d.value, c: $('eCat').dataset.val, p: $('ePr').dataset.val, t: f.t.value.trim(), k: (f.k.value.trim() || f.t.value.trim()).slice(0,10), s: f.s.value.trim()};
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data.d) || !data.t) { $('eErr').textContent = '날짜와 할 일을 적어 주세요.'; return; }
+  const btn = $('eSave'); btn.disabled = true;
+  try {
+    if (editId) await db.doc('events/' + editId).set({...data, done: !!(EM[editId] && EM[editId].done)});
+    else await db.collection('events').add({...data, done: false});
+    openDay = data.d; closeSheets(true); dayList(); openSheet('daySheet');
+  } catch (err) { $('eErr').textContent = err && err.code === 'quota_exceeded' ? '저장 공간이 가득 찼어요.' : '저장하지 못했어요. 수정 권한이 있는지 확인해 주세요.'; }
+  btn.disabled = false;
+}
+async function deleteEdit() {
+  if (!editId) return;
+  if (!delArmed) { delArmed = true; $('eDel').textContent = '한 번 더 누르면 삭제돼요'; return; }
+  try { const d = EM[editId] && EM[editId].d; await db.doc('events/' + editId).delete(); openDay = d; closeSheets(true); dayList(); openSheet('daySheet'); }
+  catch (err) { $('eErr').textContent = '삭제하지 못했어요.'; }
+}
+function buildSegs() {
+  $('eCat').innerHTML = Object.keys(CATS).map(k => `<button type="button" class="ev" data-seg-cat="${k}" style="${cv(k)}">${k}</button>`).join('');
+  $('ePr').innerHTML = [['높음','중요'],['보통','보통'],['낮음','여유']].map(([v,l]) => `<button type="button" class="pill2" data-seg-pr="${v}">${l}</button>`).join('');
+}
+async function connect() {
+  if (!window.claude || !claude.use) { note('지금은 보기 전용이에요. claude.ai에 로그인하면 수정할 수 있어요.'); return; }
+  const [u, d] = await Promise.all([claude.use('user'), claude.use('db')]);
+  db = d;
+  if (!db) { note('지금은 보기 전용이에요. claude.ai에 로그인하면 수정할 수 있어요.'); return; }
+  let w = null; try { w = u ? await u.can('data.write') : null; } catch (e) {}
+  canWrite = w !== false;
+  document.body.classList.toggle('canedit', canWrite);
+  const timer = setTimeout(() => note('일정을 불러오는 중이에요. 연결이 느리면 잠시 뒤 다시 열어 주세요.'), 10000);
+  db.collection('events').onSnapshot(snap => {
+    if (!snap.metadata.fromCache) { clearTimeout(timer); note(''); }
+    live = true;
+    setData(snap.docs.map(x => ({id: x.id, ...x.data()})));
+    if (!snap.metadata.fromCache && snap.empty) note('아직 일정이 없어요. + 버튼으로 추가해 주세요.');
+  }, err => { clearTimeout(timer); note('일정을 불러오지 못했어요. 지금은 저장된 기본 일정을 보여 드려요.'); live = false; setData(FALLBACK); });
+}
+$('eForm').addEventListener('submit', ev => { ev.preventDefault(); saveEdit(); });
+buildSegs(); header(); cats(); refresh(); connect();
+document.documentElement.classList.add('snap');
+const setPad = () => { const h = document.querySelector('header.bar').offsetHeight; document.documentElement.style.scrollPaddingTop = Math.max(0, h - 22) + 'px'; };
+setPad(); window.addEventListener('resize', setPad); new ResizeObserver(setPad).observe(document.querySelector('header.bar'));
+function applyHl(){ document.body.classList.toggle('hl', !!hl); document.querySelectorAll('.grid .ev').forEach(el => el.classList.toggle('on', !!hl && (el.dataset.c === hl || (hl === '중요' && el.classList.contains('hi'))))); }
+function keyRender(){ $('key').innerHTML = Object.keys(CATS).map(k=>`<button class="ev" data-hl="${k}" aria-pressed="${hl===k}" style="${cv(k)}">${k}</button>`).join('') + `<button class="ev hi" data-hl="중요" aria-pressed="${hl==='중요'}" style="--c:#ff3b30;--c-t:#1d1d1f">중요</button>`; }
+keyRender();
+}
+</script>
+</body>
+</html>
