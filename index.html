@@ -125,6 +125,15 @@ body.canedit .rb{cursor:pointer}
 .form input,.form textarea{font:400 16px system-ui,-apple-system,sans-serif;color:var(--ink);background:rgba(255,255,255,.85);border:.5px solid rgba(60,60,67,.2);border-radius:10px;padding:10px 12px;min-height:44px;width:100%}
 .form textarea{resize:vertical;line-height:1.45}
 .seg{display:flex;flex-wrap:wrap;gap:6px}
+.etitle{font-size:24px;line-height:1.25;padding-right:8px;word-break:keep-all;overflow-wrap:anywhere}
+.wd-label{color:var(--ink);font-weight:600;margin-left:6px}
+.wheel{position:relative;display:grid;grid-template-columns:1.2fr 1fr 1fr;height:180px;background:rgba(255,255,255,.85);border:.5px solid rgba(60,60,67,.2);border-radius:14px;overflow:hidden}
+.wheel::before{content:"";position:absolute;left:8px;right:8px;top:72px;height:36px;border-radius:9px;background:rgba(120,120,128,.13);pointer-events:none}
+.col{height:180px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;overscroll-behavior:contain;-webkit-mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent);mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent)}
+.col::-webkit-scrollbar{display:none}
+.col .pad{height:72px}
+.col .it{height:36px;line-height:36px;text-align:center;font:400 20px system-ui,-apple-system,sans-serif;color:#8a8580;scroll-snap-align:center;cursor:pointer;font-variant-numeric:tabular-nums}
+.col .it.sel{color:var(--ink);font-weight:500}
 .seg .ev{font-size:14px;padding:7px 12px;border:0;cursor:pointer;max-height:none;opacity:.55}
 .seg .ev[aria-pressed=true]{opacity:1;box-shadow:inset 0 0 0 2px var(--c)}
 .pill2{border:.5px solid rgba(60,60,67,.2);background:rgba(255,255,255,.85);color:var(--ink);font:500 14px system-ui,-apple-system,sans-serif;border-radius:9999px;padding:7px 14px;cursor:pointer}
@@ -191,14 +200,14 @@ body.detail .grid .ev,body.detail .grid .ev.over{display:block;max-height:none;w
 </section>
 <section class="sheet" id="editSheet" role="dialog" aria-modal="true" aria-labelledby="eTitle">
   <div class="grab"></div>
-  <div class="sh"><h3 id="eTitle">할 일 수정</h3><button class="x" data-close aria-label="닫기">✕</button></div>
+  <div class="sh"><h3 id="eTitle" class="etitle">할 일</h3><button class="x" data-close aria-label="닫기">✕</button></div>
   <div class="sbody">
     <form class="card form" id="eForm">
-      <label>날짜<input type="date" name="d" required></label>
+      <div class="fl"><span>날짜 <b class="wd-label" id="wLabel"></b></span><input type="hidden" name="d"><div class="wheel" id="wheel"><div class="col" id="wY"></div><div class="col" id="wM"></div><div class="col" id="wD"></div></div></div>
       <div class="fl"><span>종류</span><div class="seg" id="eCat"></div></div>
       <label>할 일<input name="t" maxlength="80" required placeholder="예: 피드: 프로그램 소개"></label>
       <label>달력에 보일 짧은 이름<input name="k" maxlength="10" placeholder="예: 프로그램"></label>
-      <label>어떻게<textarea name="s" rows="3" maxlength="300" placeholder="메모, 준비할 것"></textarea></label>
+      <label>세부 내용<textarea name="s" rows="3" maxlength="300" placeholder="메모, 준비할 것"></textarea></label>
       <div class="fl"><span>우선순위</span><div class="seg" id="ePr"></div></div>
     </form>
     <div class="actions"><button class="btn primary" id="eSave">저장</button><button class="btn danger" id="eDel">삭제</button></div>
@@ -524,7 +533,8 @@ function openEdit(id, date) {
   const f = $('eForm');
   f.d.value = e.d; f.t.value = e.t; f.k.value = e.k; f.s.value = e.s || '';
   setSeg('eCat', e.c); setSeg('ePr', e.p);
-  $('eTitle').textContent = id ? '할 일 수정' : '할 일 추가';
+  $('eTitle').textContent = id ? (e.t || '할 일') : '새 할 일';
+  setWheel(e.d);
   $('eDel').hidden = !id; $('eDel').textContent = '삭제'; $('eErr').textContent = '';
   openSheet('editSheet', true);
 }
@@ -546,6 +556,47 @@ async function deleteEdit() {
   try { const d = EM[editId] && EM[editId].d; await db.doc('events/' + editId).delete(); openDay = d; closeSheets(true); dayList(); openSheet('daySheet'); }
   catch (err) { $('eErr').textContent = '삭제하지 못했어요.'; }
 }
+const WH = 36;
+let wState = {y: 2026, m: 11, d: 27};
+function fillCol(el, vals, fmt, cur) {
+  el.innerHTML = '<div class="pad"></div>' + vals.map(v => `<div class="it" data-v="${v}">${fmt(v)}</div>`).join('') + '<div class="pad"></div>';
+  el._vals = vals;
+  el.scrollTop = Math.max(0, vals.indexOf(cur)) * WH;
+  markCol(el);
+}
+function markCol(el) { const i = Math.round(el.scrollTop / WH); el.querySelectorAll('.it').forEach((n, k) => n.classList.toggle('sel', k === i)); return el._vals[Math.min(el._vals.length - 1, Math.max(0, i))]; }
+function daysIn(y, m) { return new Date(y, m, 0).getDate(); }
+function syncWheel() {
+  const f = $('eForm');
+  wState.d = Math.min(wState.d, daysIn(wState.y, wState.m));
+  const iso = wState.y + '-' + pad(wState.m) + '-' + pad(wState.d);
+  f.d.value = iso;
+  $('wLabel').textContent = long(iso);
+}
+function setWheel(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  wState = {y, m, d};
+  fillCol($('wY'), [2026, 2027], v => v + '년', y);
+  fillCol($('wM'), [1,2,3,4,5,6,7,8,9,10,11,12], v => v + '월', m);
+  fillCol($('wD'), Array.from({length: daysIn(y, m)}, (_, i) => i + 1), v => v + '일', d);
+  syncWheel();
+}
+['wY','wM','wD'].forEach(id => {
+  const el = $(id); let t = null;
+  el.addEventListener('scroll', () => {
+    const v = markCol(el);
+    clearTimeout(t);
+    t = setTimeout(() => {
+      const key = id === 'wY' ? 'y' : id === 'wM' ? 'm' : 'd';
+      if (wState[key] === v) return;
+      wState[key] = v;
+      if (key !== 'd') { const n = daysIn(wState.y, wState.m); if ($('wD')._vals.length !== n) { wState.d = Math.min(wState.d, n); fillCol($('wD'), Array.from({length: n}, (_, i) => i + 1), x => x + '일', wState.d); } }
+      syncWheel();
+    }, 90);
+  }, {passive: true});
+  el.addEventListener('click', e => { const it = e.target.closest('.it'); if (it) el.scrollTo({top: el._vals.indexOf(+it.dataset.v) * WH, behavior: 'smooth'}); });
+});
+$('eForm').t.addEventListener('input', e => { $('eTitle').textContent = e.target.value.trim() || (editId ? '할 일' : '새 할 일'); });
 function buildSegs() {
   $('eCat').innerHTML = Object.keys(CATS).map(k => `<button type="button" class="ev" data-seg-cat="${k}" style="${cv(k)}">${k}</button>`).join('');
   $('ePr').innerHTML = [['높음','중요'],['보통','보통'],['낮음','여유']].map(([v,l]) => `<button type="button" class="pill2" data-seg-pr="${v}">${l}</button>`).join('');
