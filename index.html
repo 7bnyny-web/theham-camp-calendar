@@ -53,19 +53,19 @@ main{max-width:820px;margin:0 auto;padding:0 4px calc(130px + env(safe-area-inse
 .day.sun .n{color:var(--red)}
 .day.past .n{color:#b5b0ab}
 .day.today .n{background:var(--red);color:#fff;font-weight:600}
-.day.camp{background:color-mix(in srgb,var(--camp) 10%,transparent);border-top:2px solid var(--camp)}
-.day.camp-first{border-top-left-radius:12px;border-bottom-left-radius:12px}
-.day.camp-last{border-top-right-radius:12px;border-bottom-right-radius:12px}
-.day.camp .n,.day.staff .n{width:30px;height:30px;font-size:15px;font-weight:700;color:#fff}
-.day.camp .n{background:var(--camp);box-shadow:0 2px 8px color-mix(in srgb,var(--camp) 40%,transparent)}
+.day.camp{}
+
+
+.day.camp .n,.day.staff .n{font-weight:600}
+.day.camp .n{background:var(--camp);color:#fff;margin-bottom:23px}
 
 .day.staff .n{background:rgba(88,86,214,.14);color:#5856d6}
 .stag{color:#5856d6;font-weight:600}
-.day.camp .ev{background:rgba(255,255,255,.8)}
+
 .ctag{color:#c4224f;font-weight:600}
 .sl{margin-top:auto;align-self:stretch;text-align:center;font-size:9px;font-weight:700;letter-spacing:-.04em;color:#fff;background:linear-gradient(180deg,#6e6ce0,#5856d6);border-radius:9px;padding:3px 2px;line-height:1.15;word-break:keep-all;box-shadow:0 2px 6px rgba(88,86,214,.3);pointer-events:none}
 .day.camp-first{position:relative;overflow:visible;z-index:2}
-.cl{position:absolute;left:6px;bottom:8px;width:calc(300% - 12px);text-align:center;font-size:12px;font-weight:700;letter-spacing:.02em;color:#fff;background:var(--camp);border-radius:9999px;padding:4px 8px;box-shadow:0 3px 10px color-mix(in srgb,var(--camp) 35%,transparent);white-space:nowrap;cursor:pointer}
+.cl{position:absolute;left:2px;top:37px;width:calc(300% - 4px);box-sizing:border-box;font-size:10px;font-weight:600;letter-spacing:-.03em;line-height:1.25;color:var(--camp-t);background:color-mix(in srgb,var(--camp) 14%,#fff);border-left:3px solid var(--camp);border-radius:5px;padding:3px 6px;white-space:nowrap;cursor:pointer}
 .cl:active{opacity:.75}
 .day:active{background:rgba(0,0,0,.05)}
 .ev{position:relative;display:block;max-height:calc(2.5em + 4px);overflow:hidden;word-break:break-all;border-radius:5px;padding:2px 3px 2px 4px;font-size:10px;font-weight:600;line-height:1.25;letter-spacing:-.05em;color:var(--c-t);background:color-mix(in srgb,var(--c) 14%,#fff)}
@@ -377,7 +377,7 @@ function cal() {
       const s = y+'-'+pad(m+1)+'-'+pad(d);
       const ev = E.filter(e=>e.d===s && vis(e)).sort(byPr);
       const cls = ['day', new Date(y,m,d).getDay()===0?'sun':'', s===TODAY?'today':'', s<TODAY?'past':'', CAMP.includes(s)?'camp':'', s===CAMP[0]?'camp-first':'', s===CAMP[2]?'camp-last':'', STAFF.includes(s)?'staff':''].join(' ');
-      const campLabel = s===CAMP[0] ? '<span class="cl">D-DAY · 더함캠프 ›</span>' : '';
+      const campLabel = s===CAMP[0] ? '<span class="cl">더함캠프 D-DAY ›</span>' : '';
       const capD = cap;
       const nShow = ev.length > capD ? capD-1 : ev.length;
       const chips = ev.map((e,i)=>`<span class="ev${e.p==='높음'?' hi':''}${isDone(e)?' done':''}${i>=nShow?' over':''}" data-c="${esc(e.c)}" data-eid="${esc(e.id)}" style="${cv(e.c)}"><span class="k">${esc(e.k)}</span><span class="t">${esc(e.t.replace(/^(피드|스토리): /,''))}</span></span>`).join('') + (ev.length>nShow?`<span class="more">+${ev.length-nShow}</span>`:'');
