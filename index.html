@@ -165,6 +165,9 @@ body.detail .grid .ev,body.detail .grid .ev.over{display:block;max-height:none;w
 #daySheet .card:has(.empty){flex:1;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.4)}
 #daySheet .hint{margin-top:auto;padding-top:10px}
 #dayTitle,#dayList{will-change:transform}
+#dayList .row{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:transform .2s cubic-bezier(.2,.8,.2,1);position:relative;background:transparent}
+#dayList .row.lifted{transition:none;z-index:2;background:#fff;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
+#dayList.sorting{touch-action:none}
 .hint{font-size:12px;color:var(--mute);text-align:center;margin:10px 0 0}
 .key .ev{max-height:none}
 @media (min-width:600px){.day{min-height:calc(var(--rowh,94px) * 1.24);padding:6px 4px}.ev{font-size:12px;padding:3px 7px;letter-spacing:-.02em}.ev.hi{padding-right:13px}.ev.hi::after{top:6px;right:5px;width:6px;height:6px}}
@@ -305,7 +308,8 @@ let hl = null, zoom = 1, zoomed = false;
 try { zoom = Math.min(2.6, Math.max(1, +localStorage.getItem('theham-zoom') || 1)); zoomed = zoom > 1.3; } catch(e) {}
 function applyZoomInit(){ applyZoom.lvl = zoom > 1.75; document.body.classList.toggle('detail', applyZoom.lvl); }
 let live = false, canWrite = false, db = null, editId = null, delArmed = false;
-const byPr = (a,b) => String(a.d).localeCompare(String(b.d)) || (PO[a.p]??1)-(PO[b.p]??1);
+const ordKey = e => typeof e.o === 'number' ? e.o : 1000 + (PO[e.p] ?? 1) * 100;
+const byPr = (a,b) => String(a.d).localeCompare(String(b.d)) || ordKey(a) - ordKey(b);
 const MONTHS = [[2026,10],[2026,11],[2027,0]];
 const $ = id => document.getElementById(id);
 
@@ -315,7 +319,7 @@ const save = () => { try { localStorage.setItem('theham-done2', JSON.stringify(d
 const vis = e => on[e.c] !== false && (!onlyHi || e.p==='높음');
 const isDone = e => live ? !!e.done : !!done[e.id];
 
-const rowHTML = e => `<div class="row${isDone(e)?' done':''}" style="${cv(e.c)}"><span class="vbar"></span>
+const rowHTML = e => `<div class="row${isDone(e)?' done':''}" data-rid="${esc(e.id)}" style="${cv(e.c)}"><span class="vbar"></span>
   <div class="rb" data-edit="${esc(e.id)}"><div class="meta"><span class="tag">${esc(e.c)}</span>${e.p==='높음'?'<span class="pr">중요</span>':e.p==='낮음'?'<span class="pr l">여유</span>':''}</div>
   <p class="rt">${esc(e.t)}</p>${e.s?`<p class="rs">${esc(e.s)}</p>`:''}</div>
   <button class="chk" data-id="${esc(e.id)}" aria-label="${esc(e.t)} 완료" aria-pressed="${isDone(e)}">${isDone(e)?'✓':''}</button></div>`;
@@ -387,7 +391,7 @@ document.addEventListener('click', ev => {
   const b = ev.target.closest('button');
   if (ev.target.id === 'scrim') { closeSheets(); return; }
   const ed = ev.target.closest('[data-edit]');
-  if (ed && canWrite && !ev.target.closest('button')) { openEdit(ed.dataset.edit); return; }
+  if (ed && canWrite && !ev.target.closest('button') && !(window.__noClick > Date.now())) { openEdit(ed.dataset.edit); return; }
   if (!b) return;
   if (b.hasAttribute('data-close')) { closeSheets(); return; }
   if (b.dataset.d) { openDay = b.dataset.d; dayList(); openSheet('daySheet'); return; }
@@ -447,9 +451,10 @@ function goDay(n) {
 }
 {
   const ds = $('daySheet');
-  ds.addEventListener('touchstart', e => { if (e.touches.length !== 1 || swBusy || e.target.closest('.grab,.sh')) return; sw = {x: e.touches[0].clientX, y: e.touches[0].clientY, dir: null}; }, {passive: true});
+  ds.addEventListener('touchstart', e => { if (e.touches.length !== 1 || swBusy || e.target.closest('.grab,.sh')) return; if ($('dayList').classList.contains('sorting')) return; sw = {x: e.touches[0].clientX, y: e.touches[0].clientY, dir: null}; }, {passive: true});
   ds.addEventListener('touchmove', e => {
     if (!sw) return;
+    if ($('dayList').classList.contains('sorting')) { sw = null; setX(0, 1); return; }
     const dx = e.touches[0].clientX - sw.x, dy = e.touches[0].clientY - sw.y;
     if (!sw.dir) { if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return; sw.dir = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v'; }
     if (sw.dir !== 'h') return;
@@ -464,6 +469,55 @@ function goDay(n) {
     else setX(0, 1, 'transform .2s ease-out, opacity .2s');
   });
   document.addEventListener('keydown', e => { if (!ds.classList.contains('open')) return; if (e.key === 'ArrowRight') goDay(1); if (e.key === 'ArrowLeft') goDay(-1); });
+}
+// long-press a row in the day sheet to reorder
+{
+  const list = $('dayList');
+  let lp = null, timer = null;
+  const cancel = () => { clearTimeout(timer); timer = null; };
+  list.addEventListener('pointerdown', e => {
+    const row = e.target.closest('.row[data-rid]');
+    if (!row || e.target.closest('.chk') || !openDay) return;
+    if (live && !canWrite) return;
+    const sx = e.clientX, sy = e.clientY, pid = e.pointerId;
+    cancel();
+    timer = setTimeout(() => {
+      timer = null;
+      const rows = [...list.querySelectorAll('.row[data-rid]')];
+      if (rows.length < 2) return;
+      const rects = rows.map(r => r.getBoundingClientRect());
+      lp = {row, rows, rects, from: rows.indexOf(row), to: rows.indexOf(row), y: sy, h: rects[rows.indexOf(row)].height};
+      try { row.setPointerCapture(pid); } catch (_) {}
+      row.classList.add('lifted'); list.classList.add('sorting');
+      if (navigator.vibrate) navigator.vibrate(12);
+    }, 380);
+    const move = ev => {
+      if (!lp) { if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 8) cancel(); return; }
+      const dy = ev.clientY - lp.y;
+      lp.row.style.transform = `translateY(${dy}px) scale(1.02)`;
+      const mid = lp.rects[lp.from].top + lp.rects[lp.from].height / 2 + dy;
+      let to = lp.from;
+      lp.rects.forEach((rc, i) => { if (i < lp.from && mid < rc.top + rc.height / 2) to = Math.min(to, i); if (i > lp.from && mid > rc.top + rc.height / 2) to = Math.max(to, i); });
+      lp.to = to;
+      lp.rows.forEach((r, i) => { if (r === lp.row) return; let sh = 0; if (lp.from < to && i > lp.from && i <= to) sh = -lp.h; if (lp.from > to && i >= to && i < lp.from) sh = lp.h; r.style.transform = sh ? `translateY(${sh}px)` : ''; });
+    };
+    const up = async () => {
+      cancel(); row.removeEventListener('pointermove', move); row.removeEventListener('pointerup', up); row.removeEventListener('pointercancel', up);
+      if (!lp) return;
+      const {rows, from, to} = lp; lp = null;
+      window.__noClick = Date.now() + 400;
+      rows.forEach(r => { r.style.transition = 'none'; r.style.transform = ''; r.classList.remove('lifted'); });
+      list.classList.remove('sorting');
+      if (from === to) { rows.forEach(r => r.style.transition = ''); return; }
+      const ids = rows.map(r => r.dataset.rid); const [m] = ids.splice(from, 1); ids.splice(to, 0, m);
+      ids.forEach((id, i) => { if (EM[id]) EM[id].o = i; });
+      refresh();
+      if (live && canWrite) { for (let i = 0; i < ids.length; i++) { try { await db.doc('events/' + ids[i]).update({o: i}); } catch (err) { note('순서를 저장하지 못했어요.'); break; } } }
+    };
+    row.addEventListener('pointermove', move); row.addEventListener('pointerup', up); row.addEventListener('pointercancel', up);
+  });
+  list.addEventListener('touchmove', e => { if (list.classList.contains('sorting')) e.preventDefault(); }, {passive: false});
+  list.addEventListener('contextmenu', e => { if (e.target.closest('.row')) e.preventDefault(); });
 }
 // drag the top bar of the day sheet: up = expand, down = shrink / close
 {
